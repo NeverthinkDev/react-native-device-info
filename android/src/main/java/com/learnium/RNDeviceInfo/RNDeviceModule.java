@@ -17,6 +17,7 @@ import android.os.Build;
 import android.os.Environment;
 import android.os.StatFs;
 import android.os.BatteryManager;
+import android.provider.Settings;
 import android.provider.Settings.Secure;
 import android.webkit.WebSettings;
 import android.telephony.TelephonyManager;
@@ -67,7 +68,13 @@ public class RNDeviceModule extends ReactContextBaseJavaModule {
   }
 
   private String getCurrentLanguage() {
-    Locale current = getReactApplicationContext().getResources().getConfiguration().locale;
+    Locale current;
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+      current = getReactApplicationContext().getResources().getConfiguration().getLocales().get(0);
+    } else {
+      current = getReactApplicationContext().getResources().getConfiguration().locale;
+    }
+
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       return current.toLanguageTag();
     } else {
@@ -82,7 +89,13 @@ public class RNDeviceModule extends ReactContextBaseJavaModule {
   }
 
   private String getCurrentCountry() {
-    Locale current = getReactApplicationContext().getResources().getConfiguration().locale;
+    Locale current;
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+      current = getReactApplicationContext().getResources().getConfiguration().getLocales().get(0);
+    } else {
+      current = getReactApplicationContext().getResources().getConfiguration().locale;
+    }
+
     return current.getCountry();
   }
 
@@ -208,6 +221,17 @@ public class RNDeviceModule extends ReactContextBaseJavaModule {
     p.resolve(batteryLevel);
   }
 
+  @ReactMethod
+  public void isAirPlaneMode(Promise p) {
+    boolean isAirPlaneMode;
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR1) {
+        isAirPlaneMode = Settings.System.getInt(this.reactContext.getContentResolver(),Settings.System.AIRPLANE_MODE_ON, 0) != 0;
+    } else {
+        isAirPlaneMode = Settings.Global.getInt(this.reactContext.getContentResolver(),Settings.Global.AIRPLANE_MODE_ON, 0) != 0;
+    }
+    p.resolve(isAirPlaneMode);
+  }
+
   public String getInstallReferrer() {
     SharedPreferences sharedPref = getReactApplicationContext().getSharedPreferences("react-native-device-info", Context.MODE_PRIVATE);
     return sharedPref.getString("installReferrer", null);
@@ -265,7 +289,7 @@ public class RNDeviceModule extends ReactContextBaseJavaModule {
     constants.put("apiLevel", Build.VERSION.SDK_INT);
     constants.put("deviceLocale", this.getCurrentLanguage());
     constants.put("deviceCountry", this.getCurrentCountry());
-    constants.put("uniqueId", Secure.getString(this.reactContext.getContentResolver(), Secure.ANDROID_ID));
+    constants.put("uniqueId", Settings.Secure.getString(this.reactContext.getContentResolver(), Settings.Secure.ANDROID_ID));
     constants.put("systemManufacturer", Build.MANUFACTURER);
     constants.put("bundleId", packageName);
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
